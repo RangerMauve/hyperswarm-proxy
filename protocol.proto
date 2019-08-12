@@ -1,0 +1,20 @@
+enum EventType {
+	READY = 1;
+	JOIN = 2;
+	LEAVE = 3;
+	ON_STREAM_OPEN = 4;
+	ON_STREAM_CLOSE = 5;
+	ON_STREAM_DATA = 6;
+	ON_PEER = 7;
+	CONNECT = 8;
+}
+
+message SwarmEvent {
+	required EventType type = 1;
+
+	// The name of the topic to use
+	optional bytes topic = 2;
+	optional bytes data = 3;
+	optional bytes peer = 4;
+	optional bytes stream = 5;
+}

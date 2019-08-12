@@ -1,0 +1,35 @@
+{
+  "name": "hyperswarm-proxy",
+  "version": "1.0.0",
+  "description": "Proxy p2p connections using a duplex stream and Hyperswarm",
+  "main": "index.js",
+  "scripts": {
+    "compile-protocol": "protocol-buffers protocol.proto -o messages.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RangerMauve/hyperswarm-proxy.git"
+  },
+  "keywords": [
+    "dat",
+    "hyperswarm",
+    "swarm",
+    "p2p",
+    "proxy",
+    "stream"
+  ],
+  "author": "rangermauve",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/RangerMauve/hyperswarm-proxy/issues"
+  },
+  "homepage": "https://github.com/RangerMauve/hyperswarm-proxy#readme",
+  "dependencies": {
+    "hyperswarm": "^2.0.6",
+    "length-prefixed-stream": "^2.0.0"
+  },
+  "devDependencies": {
+    "protocol-buffers": "^4.1.0"
+  }
+}
