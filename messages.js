@@ -17,6 +17,7 @@ exports.EventType = {
   "ON_STREAM_OPEN": 4,
   "ON_STREAM_CLOSE": 5,
   "ON_STREAM_DATA": 6,
+  "ON_STREAM_ERROR": 7,
   "ON_PEER": 7,
   "CONNECT": 8
 }
@@ -33,7 +34,9 @@ defineSwarmEvent()
 function defineSwarmEvent () {
   var enc = [
     encodings.enum,
-    encodings.bytes
+    encodings.bytes,
+    encodings.string,
+    encodings.int32
   ]
 
   SwarmEvent.encodingLength = encodingLength
@@ -54,11 +57,11 @@ function defineSwarmEvent () {
       length += 1 + len
     }
     if (defined(obj.peer)) {
-      var len = enc[1].encodingLength(obj.peer)
+      var len = enc[2].encodingLength(obj.peer)
       length += 1 + len
     }
     if (defined(obj.stream)) {
-      var len = enc[1].encodingLength(obj.stream)
+      var len = enc[3].encodingLength(obj.stream)
       length += 1 + len
     }
     return length
@@ -84,13 +87,13 @@ function defineSwarmEvent () {
     }
     if (defined(obj.peer)) {
       buf[offset++] = 34
-      enc[1].encode(obj.peer, buf, offset)
-      offset += enc[1].encode.bytes
+      enc[2].encode(obj.peer, buf, offset)
+      offset += enc[2].encode.bytes
     }
     if (defined(obj.stream)) {
-      buf[offset++] = 42
-      enc[1].encode(obj.stream, buf, offset)
-      offset += enc[1].encode.bytes
+      buf[offset++] = 40
+      enc[3].encode(obj.stream, buf, offset)
+      offset += enc[3].encode.bytes
     }
     encode.bytes = offset - oldOffset
     return buf
@@ -105,8 +108,8 @@ function defineSwarmEvent () {
       type: 1,
       topic: null,
       data: null,
-      peer: null,
-      stream: null
+      peer: "",
+      stream: 0
     }
     var found0 = false
     while (true) {
@@ -133,12 +136,12 @@ function defineSwarmEvent () {
         offset += enc[1].decode.bytes
         break
         case 4:
-        obj.peer = enc[1].decode(buf, offset)
-        offset += enc[1].decode.bytes
+        obj.peer = enc[2].decode(buf, offset)
+        offset += enc[2].decode.bytes
         break
         case 5:
-        obj.stream = enc[1].decode(buf, offset)
-        offset += enc[1].decode.bytes
+        obj.stream = enc[3].decode(buf, offset)
+        offset += enc[3].decode.bytes
         break
         default:
         offset = skip(prefix & 7, buf, offset)

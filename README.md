@@ -11,7 +11,6 @@ Proxy p2p connections using a duplex stream and Hyperswarm
   - `leave(topic)`
   - `on-peer(topic, peerid)`
   - `connect(peerid)`
-  - `disconnect(streamid)`
   - `on-stream-open(topic, peer, streamid)`
   - `on-stream-data(streamid, data)`
   - `on-stream-close(streamid)`

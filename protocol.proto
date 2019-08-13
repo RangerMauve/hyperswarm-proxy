@@ -5,6 +5,7 @@ enum EventType {
 	ON_STREAM_OPEN = 4;
 	ON_STREAM_CLOSE = 5;
 	ON_STREAM_DATA = 6;
+	ON_STREAM_ERROR = 7;
 	ON_PEER = 7;
 	CONNECT = 8;
 }
@@ -14,7 +15,14 @@ message SwarmEvent {
 
 	// The name of the topic to use
 	optional bytes topic = 2;
+
+	// Data sent as part of a stream
+	// Also there for error messages
 	optional bytes data = 3;
-	optional bytes peer = 4;
-	optional bytes stream = 5;
+
+	// The ID of a peer either in discovery or new stream
+	optional string peer = 4;
+
+	// The ID of the stream sending data or emitting an event
+	optional int32 stream = 5;
 }
