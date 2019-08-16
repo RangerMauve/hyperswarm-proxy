@@ -1,5 +1,5 @@
 const { EventEmitter } = require('events')
-const network = require('@hyperswarm/network')
+const hyperswarm = require('@hyperswarm/network')
 const HyperswarmProxyStream = require('./')
 
 module.exports = class HyperswarmProxyServer extends EventEmitter {
@@ -7,26 +7,36 @@ module.exports = class HyperswarmProxyServer extends EventEmitter {
     super()
     const {
       bootstrap,
-      ephemeral
+      ephemeral,
+      network = hyperswarm({
+        bootstrap,
+        ephemeral,
+        bind: () => this.emit('ready'),
+        close: () => this.emit('close')
+      })
     } = opts
 
-    this.network = network({
-      bootstrap,
-      ephemeral,
-      bind: () => this.emit('ready'),
-      close: () => this.emit('close')
-    })
+    this.network = network
 
     this.clients = new Set()
   }
 
-  handleStream (stream) {
-    const client = new Client(stream, this)
+  handleStream (stream, cb = noop) {
+    this.network.bind((err) => {
+      if (err) return cb(err)
 
-    this.clients.add(client)
+      const client = new Client(stream, this.network)
 
-    stream.once('close', () => {
-      this.clients.delete(client)
+      this.clients.add(client)
+
+      stream.once('close', () => {
+        this.clients.delete(client)
+      })
+      client.once('error', (e) => {
+        // TODO: Output errors to DEBUG
+      })
+
+      cb(null, client)
     })
   }
 
@@ -40,14 +50,18 @@ module.exports = class HyperswarmProxyServer extends EventEmitter {
 }
 
 class Client extends HyperswarmProxyStream {
-  constructor (stream, swarm) {
+  constructor (stream, network) {
     super(stream)
 
-    this.swarm = swarm
+    this.network = network
     this.lookups = new Map()
     this.peerMap = new Map()
     this.connections = new Set()
     this.streamCounter = 0
+
+    this.once('ready', () => {
+      this.init()
+    })
   }
 
   init () {
@@ -69,13 +83,15 @@ class Client extends HyperswarmProxyStream {
       this.lookups.get(lookupString).update()
       return
     }
-
-    const lookup = this.swarm.network.lookup(topic)
+    const lookup = this.network.lookup(topic)
     this.lookups.set(lookupString, lookup)
+
+    const announce = this.network.announce(topic)
 
     lookup.on('peer', (peer) => this.handlePeer(topic, peer))
     lookup.on('close', () => {
       this.lookups.delete(lookupString)
+      announce.destroy()
     })
   }
 
@@ -91,9 +107,9 @@ class Client extends HyperswarmProxyStream {
   }
 
   handlePeer (topic, peer) {
-    const { hostname, port } = peer
+    const { host, port } = peer
 
-    const id = `${hostname}:${port}:${topic.toString('hex')}`
+    const id = `${host}:${port}:${topic.toString('hex')}`
 
     this.peerMap.set(id, peer)
 
@@ -111,7 +127,7 @@ class Client extends HyperswarmProxyStream {
 
     const proxy = this.openStream(topic, peer, id)
 
-    this.swarm.network.connect(peer, (err, socket) => {
+    this.network.connect(peerData, (err, socket) => {
       // Tell the other side about the error
       if (err) {
         this.onStreamError(id, err.message)
@@ -124,6 +140,7 @@ class Client extends HyperswarmProxyStream {
       socket.pipe(proxy).pipe(socket)
 
       socket.once('error', (err) => {
+        console.log('stream error on socket', peerData, err)
         this.onStreamError(id, err.message)
       })
 
@@ -135,9 +152,13 @@ class Client extends HyperswarmProxyStream {
 
   destroy () {
     for (let socket of this.connections) {
-      socket.close()
+      socket.end()
     }
 
-    this.close()
+    this.network = null
+
+    this.end()
   }
 }
+
+function noop () {}

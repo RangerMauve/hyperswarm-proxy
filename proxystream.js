@@ -17,6 +17,7 @@ module.exports = class ProxyStream extends Duplex {
   _handleData ({ stream, data }) {
     // See if the event was for this stream
     if (this._isId(stream)) {
+      console.log('Pushing data', data)
       this.push(data)
     }
   }
@@ -41,13 +42,11 @@ module.exports = class ProxyStream extends Duplex {
     this._protocol.removeListener('on_stream_error', this._handle_error)
   }
   _isId (streamid) {
-    return streamid.toString('hex') === this._id.toString('hex')
+    return streamid === this._id
   }
   _read () { }
   _write (chunk, encoding, callback) {
-    this._protocol.onStreamData({
-      stream: this._id, data: chunk
-    })
+    this._protocol.onStreamData(this._id, chunk)
     callback()
   }
   _final (callback) {

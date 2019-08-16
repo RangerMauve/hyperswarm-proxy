@@ -6,6 +6,7 @@ const ProxyStream = require('./proxystream')
 module.exports = class HyperswarmProxyStream extends Duplex {
   constructor (stream) {
     super()
+    this.connections = new Set()
 
     // There's going to be a lot of listeners
     this.setMaxListeners(256)
@@ -17,6 +18,8 @@ module.exports = class HyperswarmProxyStream extends Duplex {
       .pipe(stream)
 
     this.on('on_stream_open', this._handleStreamOpen.bind(this))
+
+    this.once('close', () => this._closeAllStreams())
   }
 
   ready () {
@@ -44,6 +47,9 @@ module.exports = class HyperswarmProxyStream extends Duplex {
   }
 
   onStreamData (stream, data) {
+    if (typeof data === 'string') {
+      data = Buffer.from(data, 'utf8')
+    }
     this.sendMessage('ON_STREAM_DATA', { stream, data })
   }
 
@@ -51,7 +57,7 @@ module.exports = class HyperswarmProxyStream extends Duplex {
     this.sendMessage('ON_STREAM_CLOSE', { stream })
   }
 
-  onStreamError (stream, message) {
+  onStreamError (stream, message, peer) {
     const data = Buffer.from(message, 'utf8')
     this.sendMessage('ON_STREAM_ERROR', { stream, data })
   }
@@ -59,13 +65,30 @@ module.exports = class HyperswarmProxyStream extends Duplex {
   openStream (topic, peer, stream) {
     const proxy = new ProxyStream(this, stream)
 
+    this._addStream(proxy)
+
     this.onStreamOpen(topic, peer, stream)
 
     return proxy
   }
 
+  _closeAllStreams () {
+    for (let connection of this.connections) {
+      connection.end()
+    }
+  }
+
+  _addStream (stream) {
+    this.connections.add(stream)
+    stream.once('close', () => {
+      this.connections.remove(stream)
+    })
+  }
+
   _handleStreamOpen ({ topic, peer, stream }) {
     const proxy = new ProxyStream(this, stream)
+
+    this._addStream(proxy)
 
     this.emit('stream', proxy, { topic, peer })
   }
@@ -85,6 +108,10 @@ module.exports = class HyperswarmProxyStream extends Duplex {
 
       for (let name of Object.keys(EventType)) {
         if (EventType[name] === type) {
+          if(['ON_STREAM_DATA', 'ON_STREAM_CLOSE'].includes(name)){
+            console.log({name, decoded})
+          }
+
           this.emit(name.toLowerCase(), decoded)
         }
       }

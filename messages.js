@@ -18,8 +18,8 @@ exports.EventType = {
   "ON_STREAM_CLOSE": 5,
   "ON_STREAM_DATA": 6,
   "ON_STREAM_ERROR": 7,
-  "ON_PEER": 7,
-  "CONNECT": 8
+  "ON_PEER": 8,
+  "CONNECT": 9
 }
 
 var SwarmEvent = exports.SwarmEvent = {
