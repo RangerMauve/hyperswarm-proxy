@@ -7,9 +7,11 @@ module.exports = class HyperswarmProxyClient extends EventEmitter {
   constructor (options = {}) {
     super()
 
-    const { connection, autoconnect = true } = options
+    const { connection, autoconnect = true, maxPeers = 24 } = options
 
     if (!connection) throw new TypeError('must specify initial `connection` in options')
+
+    this.maxPeers = maxPeers
 
     this._handleStream = this._handleStream.bind(this)
     this._handleClose = this._handleClose.bind(this)
@@ -37,6 +39,7 @@ module.exports = class HyperswarmProxyClient extends EventEmitter {
 
     this._protocol.on('stream', this._handleStream)
     this._protocol.on('on_peer', this._handlePeer)
+    this._protocol.once('close', this._handleClose)
     this._protocol.ready()
   }
 
@@ -52,9 +55,9 @@ module.exports = class HyperswarmProxyClient extends EventEmitter {
       }
     }
 
-    this.emit('connection', stream, details)
-
     this._connectedPeers.add(peer)
+
+    this.emit('connection', stream, details)
 
     stream.once('close', () => {
       this.emit('disconnection', stream, details)
@@ -77,9 +80,14 @@ module.exports = class HyperswarmProxyClient extends EventEmitter {
 
     this.emit('peer', peerData)
 
-    if (this._autoconnect && !this._connectedPeers.has(peer)) {
+    const hasConnected = this._connectedPeers.has(peer)
+    const hasMaxPeers = this._connectedPeers.size >= this.maxPeers
+    const shouldConnect = this._autoconnect && !hasConnected && !hasMaxPeers
+
+    if (shouldConnect) {
       this.connect(peerData)
-    } else if(!this._seenPeers.find(data => data.peer === peer)) {
+    } else if (!this._seenPeers.find(data => data.peer === peer)) {
+      // TODO: Do something with this, like connect to them after disconnection
       this._seenPeers.push(peerData)
     }
   }
@@ -99,6 +107,7 @@ module.exports = class HyperswarmProxyClient extends EventEmitter {
     if (!this._protocol) throw new Error(NOT_CONNECTED)
     this._protocol.leave(topic)
     this._topics = this._topics.filter((other) => !other.equals(topic))
+    this._seenPeers = this._seenPeers.filter(({ topic: other }) => !other.equals(topic))
   }
 
   connect (peer, cb = noop) {
@@ -117,6 +126,19 @@ module.exports = class HyperswarmProxyClient extends EventEmitter {
     }
 
     this._protocol.connect(id)
+  }
+
+  destroy (cb) {
+    if (this._protocol) {
+      this._protocol.removeListener('close', this._handleClose)
+      this._protocol.end()
+    }
+
+    this._topics = null
+    this._connectedPeers = null
+    this._seenPeers = null
+
+    if (cb) process.nextTick(cb)
   }
 }
 

@@ -1,4 +1,5 @@
 const { EventEmitter } = require('events')
+const os = require('os')
 const hyperswarm = require('@hyperswarm/network')
 const HyperswarmProxyStream = require('./')
 
@@ -11,14 +12,23 @@ module.exports = class HyperswarmProxyServer extends EventEmitter {
       network = hyperswarm({
         bootstrap,
         ephemeral,
+        socket: (socket) => this.handleIncoming(socket),
         bind: () => this.emit('ready'),
         close: () => this.emit('close')
-      })
+      }),
+      handleIncoming
     } = opts
+
+    if (handleIncoming) this.handleIncoming = handleIncoming
 
     this.network = network
 
     this.clients = new Set()
+  }
+
+  handleIncoming (socket) {
+    // By default we just kill incoming connections
+    socket.end()
   }
 
   handleStream (stream, cb = noop) {
@@ -34,10 +44,29 @@ module.exports = class HyperswarmProxyServer extends EventEmitter {
       })
       client.once('error', (e) => {
         // TODO: Output errors to DEBUG
+        this.emit('error', e)
       })
 
       cb(null, client)
     })
+  }
+
+  connectClientsTo (topic, port, host) {
+    const topicString = topic.toString('hex')
+
+    const peerData = {
+      port,
+      host,
+      local: false,
+      referrer: null,
+      topic
+    }
+
+    for (let client of this.clients) {
+      if (client.lookups.has(topicString)) {
+        client.lookups.get(topicString).emit('peer', peerData)
+      }
+    }
   }
 
   destroy (cb) {
@@ -83,15 +112,48 @@ class Client extends HyperswarmProxyStream {
       this.lookups.get(lookupString).update()
       return
     }
-    const lookup = this.network.lookup(topic)
-    this.lookups.set(lookupString, lookup)
 
-    const announce = this.network.announce(topic)
+    // Build up the list of what we think might be "us"
+    // This should be done very time to account for IP/network interface changes
+    // TODO: Move it a layer up and debounce
+    this.network.discovery.ping((err, results) => {
+      if (err) return this.emit('error', err)
 
-    lookup.on('peer', (peer) => this.handlePeer(topic, peer))
-    lookup.on('close', () => {
-      this.lookups.delete(lookupString)
-      announce.destroy()
+      const pingAddresses = results.map(({ pong }) => {
+        const { host, port } = pong
+        return `${host}:${port}`
+      })
+      const boundPort = this.network.address().port
+      const localAddresses = getIPv4Addresses()
+        .map(({ address }) => `${address}:${boundPort}`)
+
+      const selfPeerData = new Set(pingAddresses.concat(localAddresses))
+
+      const handlePeer = (peer) => {
+        const { host, port } = peer
+
+        const peerString = `${host}:${port}`
+
+        // Ignore connections to ourselves
+        if (selfPeerData.has(peerString)) return
+
+        const id = `${peerString}:${topic.toString('hex')}`
+
+        this.peerMap.set(id, peer)
+
+        this.onPeer(topic, id)
+      }
+
+      const lookup = this.network.lookup(topic)
+      this.lookups.set(lookupString, lookup)
+
+      const announce = this.network.announce(topic)
+
+      lookup.on('peer', handlePeer)
+      lookup.on('close', () => {
+        this.lookups.delete(lookupString)
+        announce.destroy()
+      })
     })
   }
 
@@ -106,26 +168,14 @@ class Client extends HyperswarmProxyStream {
     lookup.destroy()
   }
 
-  handlePeer (topic, peer) {
-    const { host, port } = peer
+  connectTo (peerData) {
+    const { topic, host, port } = peerData
 
-    const id = `${host}:${port}:${topic.toString('hex')}`
-
-    this.peerMap.set(id, peer)
-
-    this.onPeer(topic, id)
-  }
-
-  handleConnect ({ peer }) {
-    // Don't try connecting to a peer that doesn't exist
-    if (!this.peerMap.has(peer)) return
-
-    const peerData = this.peerMap.get(peer)
-    const { topic } = peerData
+    const peerId = `${host}:${port}:${topic.toString('hex')}`
 
     const id = this.nextStreamId()
 
-    const proxy = this.openStream(topic, peer, id)
+    const proxy = this.openStream(topic, peerId, id)
 
     this.network.connect(peerData, (err, socket) => {
       // Tell the other side about the error
@@ -140,7 +190,6 @@ class Client extends HyperswarmProxyStream {
       socket.pipe(proxy).pipe(socket)
 
       socket.once('error', (err) => {
-        console.log('stream error on socket', peerData, err)
         this.onStreamError(id, err.message)
       })
 
@@ -148,6 +197,15 @@ class Client extends HyperswarmProxyStream {
         this.connections.delete(socket)
       })
     })
+  }
+
+  handleConnect ({ peer }) {
+    // Don't try connecting to a peer that doesn't exist
+    if (!this.peerMap.has(peer)) return
+
+    const peerData = this.peerMap.get(peer)
+
+    this.connectTo(peerData)
   }
 
   destroy () {
@@ -162,3 +220,12 @@ class Client extends HyperswarmProxyStream {
 }
 
 function noop () {}
+
+function getIPv4Addresses () {
+  const interfaces = os.networkInterfaces()
+  return Object
+    .keys(interfaces)
+    .map((name) => interfaces[name])
+    .reduce((a, b) => a.concat(b))
+    .filter(({ family }) => family === 'IPv4')
+}

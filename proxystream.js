@@ -3,6 +3,7 @@ var Duplex = require('stream').Duplex
 module.exports = class ProxyStream extends Duplex {
   constructor (protocol, id) {
     super()
+    this._secretId = Math.random()
     this._id = id
     this._protocol = protocol
     this._isClosed = false
@@ -17,7 +18,6 @@ module.exports = class ProxyStream extends Duplex {
   _handleData ({ stream, data }) {
     // See if the event was for this stream
     if (this._isId(stream)) {
-      console.log('Pushing data', data)
       this.push(data)
     }
   }

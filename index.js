@@ -108,10 +108,6 @@ module.exports = class HyperswarmProxyStream extends Duplex {
 
       for (let name of Object.keys(EventType)) {
         if (EventType[name] === type) {
-          if(['ON_STREAM_DATA', 'ON_STREAM_CLOSE'].includes(name)){
-            console.log({name, decoded})
-          }
-
           this.emit(name.toLowerCase(), decoded)
         }
       }
