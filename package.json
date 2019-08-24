@@ -1,6 +1,6 @@
 {
   "name": "hyperswarm-proxy",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "Proxy p2p connections using a duplex stream and Hyperswarm",
   "main": "index.js",
   "scripts": {
