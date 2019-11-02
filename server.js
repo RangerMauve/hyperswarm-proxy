@@ -62,7 +62,7 @@ module.exports = class HyperswarmProxyServer extends EventEmitter {
       topic
     }
 
-    for (let client of this.clients) {
+    for (const client of this.clients) {
       if (client.lookups.has(topicString)) {
         client.lookups.get(topicString).emit('peer', peerData)
       }
@@ -70,7 +70,7 @@ module.exports = class HyperswarmProxyServer extends EventEmitter {
   }
 
   destroy (cb) {
-    for (let client of this.clients) {
+    for (const client of this.clients) {
       client.destroy()
     }
 
@@ -209,7 +209,7 @@ class Client extends HyperswarmProxyStream {
   }
 
   destroy () {
-    for (let socket of this.connections) {
+    for (const socket of this.connections) {
       socket.end()
     }
 

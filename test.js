@@ -142,7 +142,9 @@ test('handle incoming connections', (t) => {
     const socket = net.connect(port)
     const stream = core.replicate()
 
-    stream.on('error', () => void 'whatever')
+    stream.on('error', () => {
+      // whatever
+    })
 
     socket.pipe(stream).pipe(socket)
   }

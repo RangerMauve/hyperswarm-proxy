@@ -73,7 +73,7 @@ module.exports = class HyperswarmProxyStream extends Duplex {
   }
 
   _closeAllStreams () {
-    for (let connection of this.connections) {
+    for (const connection of this.connections) {
       connection.end()
     }
   }
@@ -106,7 +106,7 @@ module.exports = class HyperswarmProxyStream extends Duplex {
 
       const { type } = decoded
 
-      for (let name of Object.keys(EventType)) {
+      for (const name of Object.keys(EventType)) {
         if (EventType[name] === type) {
           this.emit(name.toLowerCase(), decoded)
         }

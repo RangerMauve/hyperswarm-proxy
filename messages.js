@@ -11,15 +11,15 @@ var varint = encodings.varint
 var skip = encodings.skip
 
 exports.EventType = {
-  "READY": 1,
-  "JOIN": 2,
-  "LEAVE": 3,
-  "ON_STREAM_OPEN": 4,
-  "ON_STREAM_CLOSE": 5,
-  "ON_STREAM_DATA": 6,
-  "ON_STREAM_ERROR": 7,
-  "ON_PEER": 8,
-  "CONNECT": 9
+  READY: 1,
+  JOIN: 2,
+  LEAVE: 3,
+  ON_STREAM_OPEN: 4,
+  ON_STREAM_CLOSE: 5,
+  ON_STREAM_DATA: 6,
+  ON_STREAM_ERROR: 7,
+  ON_PEER: 8,
+  CONNECT: 9
 }
 
 var SwarmEvent = exports.SwarmEvent = {
