@@ -9,8 +9,6 @@ module.exports = class HyperswarmProxyClient extends EventEmitter {
 
     const { connection, autoconnect = true, maxPeers = 24 } = options
 
-    if (!connection) throw new TypeError('must specify initial `connection` in options')
-
     this.maxPeers = maxPeers
 
     this._handleStream = this._handleStream.bind(this)
@@ -25,7 +23,9 @@ module.exports = class HyperswarmProxyClient extends EventEmitter {
 
     this._autoconnect = autoconnect
 
-    this.reconnect(connection)
+    if(connection) {
+      this.reconnect(connection)
+    }
   }
 
   reconnect (connection) {

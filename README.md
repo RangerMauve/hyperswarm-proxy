@@ -18,9 +18,14 @@ Proxy p2p connections using a duplex stream and Hyperswarm
 const HyperswarmProxyServer = require('hyperswarm-proxy/server')
 
 const server = new HyperswarmProxyServer({
-  bootstrap, // The bootstrap nodes to pass to hyperswarm (optional)
-  ephemeral, // Whether your server will be sort lived (ephemeral: true)
-  network, // Pass in an existing hyperswarm instance instead of creating a new one (optional)
+  // The bootstrap nodes to pass to hyperswarm (optional)
+  bootstrap,
+
+  // Whether your server will be sort lived (ephemeral: true)
+  ephemeral,
+
+  // Pass in an existing hyperswarm instance instead of creating a new one (optional)
+  network,
 
   // Function that takes incoming connections to decide what to do with them
   // Can be used to notify clients about peers
@@ -53,9 +58,15 @@ const HyperswarmProxyClient = require('hyperswarm-proxy/client')
 const somestream = getStreamForServer()
 
 const swarm = new HyperswarmProxyClient({
-  connection: somestream, // Pass in the stream which connects to the server
-  autoconnect: true, // Whether you should autoconnect to peers
-  maxPeers: 24, // The max number of peers to connect to before stopping to autoconnect
+  // Pass in the stream which connects to the server
+  // If this isn't passed in, invoke `.reconnect(somestream)` to start connecting
+  connection: somestream,
+
+  // Whether you should autoconnect to peers
+  autoconnect: true,
+
+  // The max number of peers to connect to before stopping to autoconnect
+  maxPeers: 24,
 })
 
 // When we disconnect, reconnect to the server
