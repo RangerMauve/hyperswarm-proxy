@@ -81,7 +81,7 @@ module.exports = class HyperswarmProxyStream extends Duplex {
   _addStream (stream) {
     this.connections.add(stream)
     stream.once('close', () => {
-      this.connections.remove(stream)
+      this.connections.delete(stream)
     })
   }
 
