@@ -67,6 +67,9 @@ module.exports = class HyperswarmProxyClient extends EventEmitter {
     this.emit('connection', stream, details)
 
     stream.once('close', () => {
+      if (this.destroyed) {
+        return
+      }
       this.emit('disconnection', stream, details)
       this._connectedPeers.delete(peer)
     })
