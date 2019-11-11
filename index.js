@@ -2,24 +2,28 @@ const Duplex = require('stream').Duplex
 const lps = require('length-prefixed-stream')
 const { SwarmEvent, EventType } = require('./messages')
 const ProxyStream = require('./proxystream')
+const pump = require('pump')
 
 module.exports = class HyperswarmProxyStream extends Duplex {
   constructor (stream) {
-    super()
+    super({
+      emitClose: true
+    })
     this.connections = new Set()
 
     // There's going to be a lot of listeners
     this.setMaxListeners(256)
 
-    stream
-      .pipe(lps.decode())
-      .pipe(this)
-      .pipe(lps.encode())
-      .pipe(stream)
+    pump(
+      stream,
+      lps.decode(),
+      this,
+      lps.encode(),
+      stream, (err) => {
+        this._closeAllStreams()
+      })
 
     this.on('on_stream_open', this._handleStreamOpen.bind(this))
-
-    this.once('close', () => this._closeAllStreams())
   }
 
   ready () {

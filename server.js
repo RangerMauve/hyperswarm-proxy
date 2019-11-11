@@ -97,6 +97,7 @@ class Client extends HyperswarmProxyStream {
     this.on('join', (data) => this.handleJoin(data))
     this.on('leave', (data) => this.handleLeave(data))
     this.on('connect', (data) => this.handleConnect(data))
+    this.ready()
   }
 
   nextStreamId () {
