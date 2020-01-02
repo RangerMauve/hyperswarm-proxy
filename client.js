@@ -33,8 +33,8 @@ module.exports = class HyperswarmProxyClient extends EventEmitter {
     }
   }
 
-  disconnect() {
-    if(!this._protocol) {
+  disconnect () {
+    if (!this._protocol) {
       return
     }
     this._protocol.removeListener('close', this._handleClose)
@@ -63,7 +63,7 @@ module.exports = class HyperswarmProxyClient extends EventEmitter {
   }
 
   _handleStream (stream, { topic, peer }) {
-    if(this.destroyed) {
+    if (this.destroyed) {
       // Already destroyed
       stream.end()
       return
@@ -95,7 +95,7 @@ module.exports = class HyperswarmProxyClient extends EventEmitter {
 
   _handleClose () {
     this._protocol = null
-    for(let peer of this._connectedPeers) {
+    for (const peer of this._connectedPeers) {
       peer.end()
     }
     this.emit('disconnected')
