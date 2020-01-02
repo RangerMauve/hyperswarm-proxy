@@ -19,7 +19,7 @@ module.exports = class HyperswarmProxyStream extends Duplex {
       lps.decode(),
       this,
       lps.encode(),
-      stream, (err) => {
+      stream, () => {
         this._closeAllStreams()
       })
 
