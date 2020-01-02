@@ -19,7 +19,12 @@ module.exports = class HyperswarmProxyServer extends EventEmitter {
       handleIncoming
     } = opts
 
-    if (handleIncoming) this.handleIncoming = handleIncoming
+    this.shouldAnnounce = false
+
+    if (handleIncoming) {
+      this.handleIncoming = handleIncoming
+      this.shouldAnnounce = true
+    }
 
     this.network = network
 
@@ -35,7 +40,7 @@ module.exports = class HyperswarmProxyServer extends EventEmitter {
     this.network.bind((err) => {
       if (err) return cb(err)
 
-      const client = new Client(stream, this.network)
+      const client = new Client(stream, this.network, this.shouldAnnounce)
 
       this.clients.add(client)
 
@@ -79,7 +84,7 @@ module.exports = class HyperswarmProxyServer extends EventEmitter {
 }
 
 class Client extends HyperswarmProxyStream {
-  constructor (stream, network) {
+  constructor (stream, network, shouldAnnounce) {
     super(stream)
 
     this.network = network
@@ -87,6 +92,7 @@ class Client extends HyperswarmProxyStream {
     this.peerMap = new Map()
     this.connections = new Set()
     this.streamCounter = 0
+    this.shouldAnnounce = shouldAnnounce
 
     this.once('ready', () => {
       this.init()
@@ -97,6 +103,7 @@ class Client extends HyperswarmProxyStream {
     this.on('join', (data) => this.handleJoin(data))
     this.on('leave', (data) => this.handleLeave(data))
     this.on('connect', (data) => this.handleConnect(data))
+    this.ready()
   }
 
   nextStreamId () {
@@ -147,12 +154,15 @@ class Client extends HyperswarmProxyStream {
       const lookup = this.network.lookup(topic)
       this.lookups.set(lookupString, lookup)
 
-      const announce = this.network.announce(topic)
+      let announce = null
+      if (this.shouldAnnounce) {
+        announce = this.network.announce(topic)
+      }
 
       lookup.on('peer', handlePeer)
       lookup.on('close', () => {
         this.lookups.delete(lookupString)
-        announce.destroy()
+        if (announce) announce.destroy()
       })
     })
   }

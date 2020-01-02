@@ -27,7 +27,8 @@
   "homepage": "https://github.com/RangerMauve/hyperswarm-proxy#readme",
   "dependencies": {
     "@hyperswarm/network": "^1.0.3",
-    "length-prefixed-stream": "^2.0.0"
+    "length-prefixed-stream": "^2.0.0",
+    "pump": "^3.0.0"
   },
   "devDependencies": {
     "duplexpair": "^1.0.1",

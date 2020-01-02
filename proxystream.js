@@ -2,7 +2,9 @@ var Duplex = require('stream').Duplex
 
 module.exports = class ProxyStream extends Duplex {
   constructor (protocol, id) {
-    super()
+    super({
+      emitClose: true
+    })
     this._secretId = Math.random()
     this._id = id
     this._protocol = protocol
@@ -25,7 +27,7 @@ module.exports = class ProxyStream extends Duplex {
 
   _handleClose ({ stream }) {
     if (this._isId(stream)) {
-      this.end()
+      this.destroy()
       this._cleanup()
     }
   }
@@ -34,7 +36,7 @@ module.exports = class ProxyStream extends Duplex {
     if (this._isId(stream)) {
       const message = data.toString('utf8')
       this.emit('error', new Error(message))
-      this.end()
+      this.destroy()
       this._cleanup()
     }
   }

@@ -14,9 +14,11 @@ module.exports = class HyperswarmProxyClient extends EventEmitter {
     this._handleStream = this._handleStream.bind(this)
     this._handleClose = this._handleClose.bind(this)
     this._handlePeer = this._handlePeer.bind(this)
+    this._handleError = this._handleError.bind(this)
     this._reJoin = this._reJoin.bind(this)
 
     this._protocol = null
+    this._connection = null
 
     this._topics = []
     this._connectedPeers = new Set()
@@ -31,18 +33,28 @@ module.exports = class HyperswarmProxyClient extends EventEmitter {
     }
   }
 
-  reconnect (connection) {
-    if (this._protocol) {
-      this._protocol.removeListener('close', this._handleClose)
-      this._protocol.end()
-      this._protocol = null
+  disconnect () {
+    if (!this._protocol) {
+      return
     }
+    this._protocol.removeListener('close', this._handleClose)
+    this._connection.end()
+    this._protocol.end()
 
+    this._connection = null
+    this._protocol = null
+  }
+
+  reconnect (connection) {
+    this.disconnect()
+
+    this._connection = connection
     this._protocol = new HyperswarmProxyStream(connection)
 
     this._protocol.on('stream', this._handleStream)
     this._protocol.on('on_peer', this._handlePeer)
     this._protocol.once('close', this._handleClose)
+    this._protocol.on('error', this._handleError)
 
     // Once the other side is ready, re-join known topics
     this._protocol.once('ready', this._reJoin)
@@ -51,6 +63,12 @@ module.exports = class HyperswarmProxyClient extends EventEmitter {
   }
 
   _handleStream (stream, { topic, peer }) {
+    if (this.destroyed) {
+      // Already destroyed
+      stream.end()
+      return
+    }
+
     const details = {
       type: 'proxy',
       client: true,
@@ -77,7 +95,14 @@ module.exports = class HyperswarmProxyClient extends EventEmitter {
 
   _handleClose () {
     this._protocol = null
+    for (const peer of this._connectedPeers) {
+      peer.end()
+    }
     this.emit('disconnected')
+  }
+
+  _handleError (e) {
+    this.emit('error', e)
   }
 
   _handlePeer ({ topic, peer }) {
@@ -148,15 +173,13 @@ module.exports = class HyperswarmProxyClient extends EventEmitter {
   }
 
   destroy (cb) {
-    if (this._protocol) {
-      this._protocol.removeListener('close', this._handleClose)
-      this._protocol.end()
-    }
+    this.destroyed = true
+
+    this.disconnect()
 
     this._topics = null
     this._connectedPeers = null
     this._seenPeers = null
-    this.destroyed = true
 
     if (cb) process.nextTick(cb)
   }
