@@ -172,6 +172,16 @@ module.exports = class HyperswarmProxyClient extends EventEmitter {
     this._protocol.connect(id)
   }
 
+  flush (cb = noop) {
+    // No clue how to implement this.
+    if (cb) process.nextTick(cb)
+  }
+
+  status () {
+    // Hardcoded since we only do lookups through the proxy
+    return { lookup: true, announce: false }
+  }
+
   destroy (cb) {
     this.destroyed = true
 
