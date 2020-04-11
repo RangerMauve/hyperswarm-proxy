@@ -69,16 +69,7 @@ module.exports = class HyperswarmProxyClient extends EventEmitter {
       return
     }
 
-    const details = {
-      type: 'proxy',
-      client: true,
-      peer: {
-        host: peer,
-        port: 0,
-        local: false,
-        topic
-      }
-    }
+    const details = new Details(peer, topic)
 
     this._connectedPeers.add(peer)
 
@@ -196,3 +187,22 @@ module.exports = class HyperswarmProxyClient extends EventEmitter {
 }
 
 function noop () {}
+
+class Details {
+  constructor (peer, topic) {
+    this.type = 'proxy'
+    this.client = true
+
+    this.peer = {
+      host: peer,
+      port: 0,
+      local: false,
+      topic
+    }
+  }
+
+  // Can't easily deduplicate yet?
+  deduplicate () {
+    return false
+  }
+}
