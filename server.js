@@ -94,15 +94,19 @@ class Client extends HyperswarmProxyStream {
     this.streamCounter = 0
     this.shouldAnnounce = shouldAnnounce
 
+    this.handleJoin = this.handleJoin.bind(this)
+    this.handleLeave = this.handleLeave.bind(this)
+    this.handleConnect = this.handleConnect.bind(this)
+
     this.once('ready', () => {
       this.init()
     })
   }
 
   init () {
-    this.on('join', (data) => this.handleJoin(data))
-    this.on('leave', (data) => this.handleLeave(data))
-    this.on('connect', (data) => this.handleConnect(data))
+    this.on('join', this.handleJoin)
+    this.on('leave', this.handleLeave)
+    this.on('connect', this.handleConnect)
     this.ready()
   }
 
@@ -124,6 +128,8 @@ class Client extends HyperswarmProxyStream {
     // This should be done very time to account for IP/network interface changes
     // TODO: Move it a layer up and debounce
     this.network.discovery.ping((err, results) => {
+      if (!this.network) return
+
       if (err) return this.emit('error', err)
 
       const pingAddresses = results.map(({ pong }) => {
@@ -219,6 +225,10 @@ class Client extends HyperswarmProxyStream {
   }
 
   destroy () {
+    this.removeListener('join', this.handleJoin)
+    this.removeListener('leave', this.handleLeave)
+    this.removeListener('connect', this.handleConnect)
+
     for (const socket of this.connections) {
       socket.end()
     }
