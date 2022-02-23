@@ -8,6 +8,7 @@ enum EventType {
 	ON_STREAM_ERROR = 7;
 	ON_PEER = 8;
 	CONNECT = 9;
+	ON_UPDATED = 10;
 }
 
 message SwarmEvent {

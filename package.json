@@ -11,6 +11,11 @@
     "type": "git",
     "url": "git+https://github.com/RangerMauve/hyperswarm-proxy.git"
   },
+  "standard": {
+    "ignore": [
+      "messages.js"
+    ]
+  },
   "keywords": [
     "dat",
     "hyperswarm",

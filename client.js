@@ -15,6 +15,7 @@ module.exports = class HyperswarmProxyClient extends EventEmitter {
     this._handleClose = this._handleClose.bind(this)
     this._handlePeer = this._handlePeer.bind(this)
     this._handleError = this._handleError.bind(this)
+    this._handleUpdated = this._handleUpdated.bind(this)
     this._reJoin = this._reJoin.bind(this)
 
     this._protocol = null
@@ -55,6 +56,7 @@ module.exports = class HyperswarmProxyClient extends EventEmitter {
     this._protocol.on('on_peer', this._handlePeer)
     this._protocol.once('close', this._handleClose)
     this._protocol.on('error', this._handleError)
+    this._protocol.on('on_updated', this._handleUpdated)
 
     // Once the other side is ready, re-join known topics
     this._protocol.once('ready', this._reJoin)
@@ -116,6 +118,10 @@ module.exports = class HyperswarmProxyClient extends EventEmitter {
       // TODO: Do something with this, like connect to them after disconnection
       this._seenPeers.push(peerData)
     }
+  }
+
+  _handleUpdated ({ topic }) {
+    this.emit('updated', { key: topic })
   }
 
   _reJoin () {

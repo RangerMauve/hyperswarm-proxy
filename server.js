@@ -157,6 +157,10 @@ class Client extends HyperswarmProxyStream {
         this.onPeer(topic, id)
       }
 
+      const handleUpdate = () => {
+        this.onUpdated(topic)
+      }
+
       const lookup = this.network.lookup(topic)
       this.lookups.set(lookupString, lookup)
 
@@ -166,6 +170,7 @@ class Client extends HyperswarmProxyStream {
       }
 
       lookup.on('peer', handlePeer)
+      lookup.on('update', handleUpdate)
       lookup.on('close', () => {
         this.lookups.delete(lookupString)
         if (announce) announce.destroy()

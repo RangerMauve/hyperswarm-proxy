@@ -1,4 +1,4 @@
-var Duplex = require('stream').Duplex
+const Duplex = require('stream').Duplex
 
 module.exports = class ProxyStream extends Duplex {
   constructor (protocol, id) {

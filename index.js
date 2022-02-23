@@ -42,6 +42,10 @@ module.exports = class HyperswarmProxyStream extends Duplex {
     this.sendMessage('ON_PEER', { topic, peer })
   }
 
+  onUpdated (topic) {
+    this.sendMessage('ON_UPDATED', { topic })
+  }
+
   connect (peer) {
     this.sendMessage('CONNECT', { peer })
   }
