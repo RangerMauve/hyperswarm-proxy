@@ -88,9 +88,6 @@ module.exports = class HyperswarmProxyClient extends EventEmitter {
 
   _handleClose () {
     this._protocol = null
-    for (const peer of this._connectedPeers) {
-      peer.end()
-    }
     this.emit('disconnected')
   }
 
