@@ -16,6 +16,7 @@ module.exports = class ProxyStream extends Duplex {
     this._protocol.on('on_stream_data', this._handle_data)
     this._protocol.on('on_stream_close', this._handle_close)
     this._protocol.on('on_stream_error', this._handle_error)
+    this._protocol.once('end', () => this._cleanup())
   }
 
   _handleData ({ stream, data }) {
